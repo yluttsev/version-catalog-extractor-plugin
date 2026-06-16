@@ -6,6 +6,25 @@ plugins {
     id("org.jetbrains.intellij.platform")
 }
 
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "251"
+            untilBuild = provider { null }
+        }
+    }
+
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
+}
+
 dependencies {
     testImplementation(libs.junit)
 
@@ -17,5 +36,6 @@ dependencies {
         bundledPlugin("com.intellij.gradle")
         bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("org.intellij.groovy")
+
     }
 }
