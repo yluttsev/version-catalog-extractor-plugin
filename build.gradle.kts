@@ -14,6 +14,8 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
 
         bundledPlugin("com.intellij.java")
+        bundledPlugin("com.intellij.gradle")
         bundledPlugin("org.jetbrains.kotlin")
+        bundledPlugin("org.intellij.groovy")
     }
 }
