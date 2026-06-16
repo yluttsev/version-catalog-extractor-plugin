@@ -9,8 +9,24 @@
 
     <depends>org.jetbrains.kotlin</depends>
     <depends>com.intellij.java</depends>
+    <depends>com.intellij.gradle</depends>
+    <depends>org.intellij.groovy</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <localInspection
+                language="kotlin"
+                displayName="Hardcoded dependency version (Kotlin DSL)"
+                groupName="Gradle"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.github.yluttsev.catalogextractor.inspection.KotlinDslInspection"/>
+        <localInspection
+                language="Groovy"
+                displayName="Hardcoded dependency version (Groovy DSL)"
+                groupName="Gradle"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.github.yluttsev.catalogextractor.inspection.GroovyDslInspection"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
