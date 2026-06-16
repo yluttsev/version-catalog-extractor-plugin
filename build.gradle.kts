@@ -17,5 +17,6 @@ dependencies {
         bundledPlugin("com.intellij.gradle")
         bundledPlugin("org.jetbrains.kotlin")
         bundledPlugin("org.intellij.groovy")
+
     }
 }
