@@ -2,15 +2,36 @@
     <id>io.github.yluttsev.version-catalog-extractor</id>
     <name>Version Catalog Extractor</name>
     <vendor url="https://github.com/yluttsev">Yuri Luttsev</vendor>
-    <description><![CDATA[
-        Enter short description for your plugin here.<br>
-        <em>most HTML tags may be used</em>
-        ]]></description>
+    <resource-bundle>messages.CatalogExtractorBundle</resource-bundle>
+    <description>
+        <![CDATA[
+    Detects hardcoded dependency versions in Gradle Kotlin and Groovy DSL files and offers
+    a quick fix to move them to <code>gradle/libs.versions.toml</code>.<br>
+    If the version catalog does not exist, the plugin creates it. If it already exists,
+    the plugin reuses matching aliases or adds new library and version entries.
+        ]]>
+    </description>
 
     <depends>org.jetbrains.kotlin</depends>
     <depends>com.intellij.java</depends>
+    <depends>com.intellij.gradle</depends>
+    <depends>org.intellij.groovy</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <localInspection
+                language="kotlin"
+                displayName="%inspection.kotlin.dsl.display.name"
+                groupName="Gradle"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.github.yluttsev.catalogextractor.inspection.KotlinDslInspection"/>
+        <localInspection
+                language="Groovy"
+                displayName="%inspection.groovy.dsl.display.name"
+                groupName="Gradle"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.github.yluttsev.catalogextractor.inspection.GroovyDslInspection"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">
