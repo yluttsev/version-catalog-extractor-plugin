@@ -21,21 +21,25 @@ class VersionCatalogFileService {
 
     fun create(project: Project): CatalogFile? {
         val baseDir = findBaseDir(project) ?: return null
+        return try {
+            val gradleDir = baseDir.findChild(GRADLE_DIR)
+                ?: baseDir.createChildDirectory(null, GRADLE_DIR).also {
+                    LOG.debug("Created '$GRADLE_DIR' directory for ${project.name}")
+                }
 
-        val gradleDir = baseDir.findChild(GRADLE_DIR)
-            ?: baseDir.createChildDirectory(null, GRADLE_DIR).also {
-                LOG.debug("Created '$GRADLE_DIR' directory for ${project.name}")
+            val existingCatalog = gradleDir.findChild(CATALOG_FILE)
+            if (existingCatalog != null) {
+                return CatalogFile(existingCatalog, created = false)
             }
 
-        val existingCatalog = gradleDir.findChild(CATALOG_FILE)
-        if (existingCatalog != null) {
-            return CatalogFile(existingCatalog, created = false)
+            val newCatalog = gradleDir.createChildData(null, CATALOG_FILE).also {
+                LOG.debug("Created '$GRADLE_DIR/$CATALOG_FILE' for ${project.name}")
+            }
+            CatalogFile(newCatalog, created = true)
+        } catch (e: Exception) {
+            LOG.error("Failed to create '$GRADLE_DIR/$CATALOG_FILE' for ${project.name}", e)
+            null
         }
-
-        val newCatalog = gradleDir.createChildData(null, CATALOG_FILE).also {
-            LOG.debug("Created '$GRADLE_DIR/$CATALOG_FILE' for ${project.name}")
-        }
-        return CatalogFile(newCatalog, created = true)
     }
 
     fun findOrCreate(project: Project): CatalogFile? = find(project) ?: create(project)
