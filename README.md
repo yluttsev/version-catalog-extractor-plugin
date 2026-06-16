@@ -1,117 +1,108 @@
-# Version-catalog-extractor
+# Version Catalog Extractor
 
-[![Twitter Follow](https://img.shields.io/badge/follow-%40JBPlatform-1DA1F2?logo=twitter)](https://twitter.com/JBPlatform)
-[![Developers Forum](https://img.shields.io/badge/JetBrains%20Platform-Join-blue)][jb:forum]
+An IntelliJ IDEA plugin that detects hardcoded dependency versions in Gradle build files and extracts them into a Gradle Version Catalog (`libs.versions.toml`).
 
-## Plugin structure
+## What it does
 
-A generated project contains the following content structure:
+The plugin scans Gradle build files for dependencies with hardcoded versions and reports the version part as an inspection warning:
 
-```
-.
-├── .run/                   Predefined Run/Debug Configurations
-├── build/                  Output build directory
-├── gradle
-│   ├── wrapper/            Gradle Wrapper
-│   ├── libs.versions.toml  Version catalog
-├── src                     Plugin sources
-│   ├── main
-│   │   ├── kotlin/         Kotlin production sources
-│   │   └── resources/      Resources - plugin.xml, icons, messages
-├── .gitignore              Git ignoring rules
-├── build.gradle.kts        Gradle build configuration
-├── gradle.properties       Gradle configuration properties
-├── gradlew                 *nix Gradle Wrapper script
-├── gradlew.bat             Windows Gradle Wrapper script
-├── README.md               README
-└── settings.gradle.kts     Gradle project settings
+```kotlin
+// Kotlin DSL
+implementation("org.example:lib:1.2.3")
 ```
 
-In addition to the configuration files, the most crucial part is the `src` directory, which contains our implementation
-and the manifest for our plugin – [plugin.xml][file:plugin.xml].
+```groovy
+// Groovy DSL
+implementation 'org.example:lib:1.2.3'
+```
 
-> [!NOTE]
-> To use Java in your plugin, create the `/src/main/java` directory.
+When found, it highlights the version with a warning and offers a quick fix via **Alt+Enter**.
 
-## Plugin configuration file
+## Example
 
-The plugin configuration file is a [plugin.xml][file:plugin.xml] file located in the `src/main/resources/META-INF`
-directory.
-It provides general information about the plugin, its dependencies, extensions, and listeners.
+Before:
 
-You can read more about this file in the [Plugin Configuration File][docs:plugin.xml] section of our documentation.
+```kotlin
+dependencies {
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+}
+```
 
-If you're still not quite sure what this is all about, read [Introduction to IntelliJ Platform][docs:intro].
+After applying the quick fix:
 
-## Predefined Run/Debug configurations
+```kotlin
+dependencies {
+    implementation(libs.retrofit)
+}
+```
 
-Within the default project structure, there is a `.run` directory provided containing predefined *Run/Debug
-configurations* that expose corresponding Gradle tasks:
+`gradle/libs.versions.toml`:
 
-| Configuration name | Description                                                                                                                                                                         |
-|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Run Plugin         | Runs [`:runIde`][gh:intellij-platform-gradle-plugin-runIde] IntelliJ Platform Gradle Plugin task. Use the *Debug* icon for plugin debugging.                                        |
-| Run Tests          | Runs [`:test`][gradle:lifecycle-tasks] Gradle task.                                                                                                                                 |
-| Run Verifications  | Runs [`:verifyPlugin`][gh:intellij-platform-gradle-plugin-verifyPlugin] IntelliJ Platform Gradle Plugin task to check the plugin compatibility against the specified IntelliJ IDEs. |
+```toml
+[versions]
+retrofit = "2.11.0"
 
-> [!NOTE]
-> You can find the logs from the running task in the `idea.log` tab.
+[libraries]
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+```
 
-## Publishing the plugin
+## Quick fix behavior
 
-> [!TIP]
-> Make sure to follow all guidelines listed in [Publishing a Plugin][docs:publishing] to follow all recommended and
-> required steps.
+Applying the fix triggers the following steps:
 
-Releasing a plugin to [JetBrains Marketplace](https://plugins.jetbrains.com) is a straightforward operation that uses
-the `publishPlugin` Gradle task provided by
-the [intellij-platform-gradle-plugin][gh:intellij-platform-gradle-plugin-docs].
+1. Locates `gradle/libs.versions.toml` in the project root. Creates the file if it does not exist.
+2. Checks whether a library entry for the same `group:name` already exists in the catalog. If it does, reuses the existing alias instead of creating a duplicate.
+3. If no entry exists, generates an alias from the dependency coordinates, adds a new entry to `[libraries]`, and creates a corresponding entry in `[versions]`.
+4. Replaces the original dependency declaration with a catalog reference:
 
-You can also upload the plugin to the [JetBrains Plugin Repository](https://plugins.jetbrains.com/plugin/upload)
-manually via UI.
+```kotlin
+implementation(libs.some.library)
+```
 
-## Useful links
+5. Triggers a Gradle project refresh so the IDE picks up the updated catalog.
 
-- [IntelliJ Platform SDK Plugin SDK][docs]
-- [IntelliJ Platform Gradle Plugin Documentation][gh:intellij-platform-gradle-plugin-docs]
-- [IntelliJ Platform Explorer][jb:ipe]
-- [JetBrains Marketplace Quality Guidelines][jb:quality-guidelines]
-- [IntelliJ Platform UI Guidelines][jb:ui-guidelines]
-- [JetBrains Marketplace Paid Plugins][jb:paid-plugins]
-- [IntelliJ SDK Code Samples][gh:code-samples]
+Existing catalog entries are detected in both common TOML forms:
 
-[docs]: https://plugins.jetbrains.com/docs/intellij
+```toml
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+```
 
-[docs:intro]: https://plugins.jetbrains.com/docs/intellij/intellij-platform.html?from=IJPluginTemplate
+```toml
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+```
 
-[docs:plugin.xml]: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html?from=IJPluginTemplate
+## Supported configurations
 
-[docs:publishing]: https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate
+The inspection currently checks dependencies declared through these common Gradle configurations:
 
-[file:plugin.xml]: ./src/main/resources/META-INF/plugin.xml
+```text
+implementation, api, compileOnly, runtimeOnly,
+testImplementation, testCompileOnly, testRuntimeOnly,
+kapt, ksp, annotationProcessor,
+debugImplementation, releaseImplementation
+```
 
-[gh:code-samples]: https://github.com/JetBrains/intellij-sdk-code-samples
+## What is not flagged
 
-[gh:intellij-platform-gradle-plugin]: https://github.com/JetBrains/intellij-platform-gradle-plugin
+- Dependencies already using a catalog alias: `implementation(libs.retrofit)`
+- Dependencies with interpolated versions: `implementation("org.example:lib:$version")`
+- Dependencies without a literal `group:name:version` notation
 
-[gh:intellij-platform-gradle-plugin-docs]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin.html
+## Requirements
 
-[gh:intellij-platform-gradle-plugin-runIde]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-tasks.html#runIde
+- IntelliJ IDEA 2025.1+
+- Gradle project with Kotlin DSL or Groovy DSL
 
-[gh:intellij-platform-gradle-plugin-verifyPlugin]: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-tasks.html#verifyPlugin
+## Running the plugin locally
 
-[gradle:lifecycle-tasks]: https://docs.gradle.org/current/userguide/java_plugin.html#lifecycle_tasks
+Use the **Run Plugin** run configuration. It launches a sandboxed IntelliJ IDEA instance with the plugin installed.
 
-[jb:github]: https://github.com/JetBrains/.github/blob/main/profile/README.md
+```
+./gradlew runIde
+```
 
-[jb:forum]: https://platform.jetbrains.com/
+## Running tests
 
-[jb:quality-guidelines]: https://plugins.jetbrains.com/docs/marketplace/quality-guidelines.html
-
-[jb:paid-plugins]: https://plugins.jetbrains.com/docs/marketplace/paid-plugins-marketplace.html
-
-[jb:quality-guidelines]: https://plugins.jetbrains.com/docs/marketplace/quality-guidelines.html
-
-[jb:ipe]: https://jb.gg/ipe
-
-[jb:ui-guidelines]: https://jetbrains.github.io/ui
+```
+./gradlew test
+```

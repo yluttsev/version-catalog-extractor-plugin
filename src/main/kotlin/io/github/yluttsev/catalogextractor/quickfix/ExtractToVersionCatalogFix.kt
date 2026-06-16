@@ -26,6 +26,7 @@ class ExtractToVersionCatalogFix(private val info: DependencyInfo) : LocalQuickF
         val replacementTarget = usageReplacer.prepare(element, info) ?: return
         var shouldRefreshGradle = false
 
+        try {
         WriteCommandAction.runWriteCommandAction(project, "Extract to Version Catalog", null, {
             val existingCatalogFile = catalogFileService.find(project)
             val content = existingCatalogFile
@@ -54,6 +55,11 @@ class ExtractToVersionCatalogFix(private val info: DependencyInfo) : LocalQuickF
             }
             shouldRefreshGradle = usageReplaced
         })
+
+        } catch (e: Exception) {
+            LOG.error("Failed to extract ${info.module} to version catalog", e)
+            return
+        }
 
         if (shouldRefreshGradle) {
             projectRefresher.refresh(project)
