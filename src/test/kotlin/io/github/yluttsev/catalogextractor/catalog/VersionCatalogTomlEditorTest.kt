@@ -18,7 +18,7 @@ class VersionCatalogTomlEditorTest {
         junit = "4.13.2"
     """.trimIndent()
 
-    private fun buildDependencyInfo(groupId: String, artifactId: String, version: String = "2.9.0") = DependencyInfo(
+    private fun buildDependencyInfo(groupId: String, artifactId: String, version: String? = "2.9.0") = DependencyInfo(
         configuration = "implementation",
         coordinate = DependencyCoordinate(
             groupId = groupId,
@@ -77,6 +77,35 @@ class VersionCatalogTomlEditorTest {
     }
 
     @Test
+    fun `addEntry inserts versionless dependency into libraries only`() {
+        val result = VersionCatalogTomlEditor.addEntry(
+            sampleToml,
+            "spring-boot-starter-web",
+            buildDependencyInfo("org.springframework.boot", "spring-boot-starter-web", version = null)
+        )
+
+        assertTrue(result.contains("""spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }"""))
+        assertFalse(result.contains("""spring-boot-starter-web = """"))
+        assertFalse(result.contains("""version.ref = "spring-boot-starter-web""""))
+    }
+
+    @Test
+    fun `addEntry does not create versions section for versionless dependency`() {
+        val toml = """
+            [libraries]
+            junit = { module = "junit:junit" }
+        """.trimIndent()
+
+        val result = VersionCatalogTomlEditor.addEntry(
+            toml,
+            "spring-boot-starter-web",
+            buildDependencyInfo("org.springframework.boot", "spring-boot-starter-web", version = null)
+        )
+
+        assertFalse(result.contains("[versions]"))
+    }
+
+    @Test
     fun `addEntry creates missing libraries section`() {
         val toml = """
             [versions]
@@ -122,8 +151,8 @@ class VersionCatalogTomlEditorTest {
     }
 
     @Test
-    fun `emptyToml has correct section order`() {
-        val toml = VersionCatalogTomlEditor.emptyToml()
+    fun `createEmptyCatalogContent has correct section order`() {
+        val toml = VersionCatalogTomlEditor.createEmptyCatalogContent()
         assertTrue(toml.indexOf("[libraries]") < toml.indexOf("[plugins]"))
         assertTrue(toml.indexOf("[plugins]") < toml.indexOf("[versions]"))
     }

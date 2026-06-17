@@ -8,31 +8,40 @@ import org.junit.Test
 class DependencyProblemReporterTest {
 
     @Test
-    fun `findVersionRange returns range for double quoted literal`() {
+    fun `findNotationRange returns range for double quoted literal`() {
         assertEquals(
-            TextRange(33, 38),
-            DependencyProblemReporter.findVersionRange("\"com.squareup.retrofit2:retrofit:2.9.0\"", "2.9.0")
+            TextRange(1, 38),
+            DependencyProblemReporter.findNotationRange(
+                "\"com.squareup.retrofit2:retrofit:2.9.0\"",
+                "com.squareup.retrofit2:retrofit:2.9.0"
+            )
         )
     }
 
     @Test
-    fun `findVersionRange returns range for single quoted literal`() {
+    fun `findNotationRange returns range for single quoted literal`() {
         assertEquals(
-            TextRange(33, 38),
-            DependencyProblemReporter.findVersionRange("'com.squareup.retrofit2:retrofit:2.9.0'", "2.9.0")
+            TextRange(1, 38),
+            DependencyProblemReporter.findNotationRange(
+                "'com.squareup.retrofit2:retrofit:2.9.0'",
+                "com.squareup.retrofit2:retrofit:2.9.0"
+            )
         )
     }
 
     @Test
-    fun `findVersionRange returns last version occurrence`() {
+    fun `findNotationRange returns range for versionless dependency`() {
         assertEquals(
-            TextRange(16, 19),
-            DependencyProblemReporter.findVersionRange("\"group-1.0:name:1.0\"", "1.0")
+            TextRange(1, 49),
+            DependencyProblemReporter.findNotationRange(
+                "\"org.springframework.boot:spring-boot-starter-web\"",
+                "org.springframework.boot:spring-boot-starter-web"
+            )
         )
     }
 
     @Test
-    fun `findVersionRange returns null when version is absent`() {
-        assertNull(DependencyProblemReporter.findVersionRange("\"group:name:1.0\"", "2.0"))
+    fun `findNotationRange returns null when notation is absent`() {
+        assertNull(DependencyProblemReporter.findNotationRange("\"group:name:1.0\"", "other:name"))
     }
 }
