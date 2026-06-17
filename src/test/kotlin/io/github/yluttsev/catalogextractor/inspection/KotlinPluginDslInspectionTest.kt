@@ -4,20 +4,15 @@ import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.vfs.LocalFileSystem
-import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiFile
 import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.testFramework.fixtures.BasePlatformTestCase
 import io.github.yluttsev.catalogextractor.CatalogExtractorBundle
 import io.github.yluttsev.catalogextractor.detection.PluginDetector
 import io.github.yluttsev.catalogextractor.quickfix.ExtractPluginToVersionCatalogFix
-import org.jetbrains.kotlin.psi.KtBinaryExpression
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import java.nio.file.Files
 import java.nio.file.Path
+import org.jetbrains.kotlin.psi.KtBinaryExpression
 
 class KotlinPluginDslInspectionTest : BasePlatformTestCase() {
 
@@ -85,7 +80,7 @@ class KotlinPluginDslInspectionTest : BasePlatformTestCase() {
         )
 
         val catalog = requireNotNull(catalogFile())
-        val catalogContent = VfsUtilCore.loadText(catalog)
+        val catalogContent = Files.readString(Path.of(catalog.path), Charsets.UTF_8)
         assertTrue(catalogContent.contains("""spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }"""))
         assertTrue(catalogContent.contains("""spring-boot = "3.5.0""""))
     }
@@ -133,7 +128,7 @@ class KotlinPluginDslInspectionTest : BasePlatformTestCase() {
                 [versions]
                 spring-boot = "3.5.0"
             """.trimIndent(),
-            VfsUtilCore.loadText(catalog)
+            Files.readString(catalogPath, Charsets.UTF_8)
         )
     }
 
@@ -166,7 +161,7 @@ class KotlinPluginDslInspectionTest : BasePlatformTestCase() {
     }
 
     private fun catalogFile() = LocalFileSystem.getInstance()
-        .findFileByPath("${project.basePath}/gradle/libs.versions.toml")
+        .refreshAndFindFileByNioFile(Path.of(requireNotNull(project.basePath), "gradle", "libs.versions.toml"))
 
     private fun problemDescription(): String =
         CatalogExtractorBundle.message("inspection.plugin.problem.description")
