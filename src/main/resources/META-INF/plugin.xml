@@ -7,6 +7,7 @@
         <![CDATA[
     Detects literal dependency declarations in Gradle Kotlin and Groovy DSL files and offers
     a quick fix to move them to <code>gradle/libs.versions.toml</code>.<br>
+    It can also extract versioned Gradle Kotlin DSL plugin declarations to plugin aliases.<br>
     If the version catalog does not exist, the plugin creates it. If it already exists,
     the plugin reuses matching aliases or adds new library entries with version entries when needed.
         ]]>
@@ -32,6 +33,13 @@
                 enabledByDefault="true"
                 level="WARNING"
                 implementationClass="io.github.yluttsev.catalogextractor.inspection.GroovyDslInspection"/>
+        <localInspection
+                language="kotlin"
+                displayName="%inspection.kotlin.plugin.dsl.display.name"
+                groupName="Gradle"
+                enabledByDefault="true"
+                level="WARNING"
+                implementationClass="io.github.yluttsev.catalogextractor.inspection.KotlinPluginDslInspection"/>
     </extensions>
 
     <extensions defaultExtensionNs="org.jetbrains.kotlin">

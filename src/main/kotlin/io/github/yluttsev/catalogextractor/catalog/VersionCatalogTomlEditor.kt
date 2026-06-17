@@ -1,10 +1,12 @@
 package io.github.yluttsev.catalogextractor.catalog
 
 import io.github.yluttsev.catalogextractor.model.DependencyInfo
+import io.github.yluttsev.catalogextractor.model.PluginInfo
 
 object VersionCatalogTomlEditor {
 
     private const val LIBRARIES_SECTION = "libraries"
+    private const val PLUGINS_SECTION = "plugins"
     private const val VERSIONS_SECTION = "versions"
 
     private val SECTION_HEADER_REGEX = Regex("""^\s*\[[^\]]+]\s*$""")
@@ -36,6 +38,21 @@ object VersionCatalogTomlEditor {
         return regex.findAll(librariesContent).map { it.groupValues[1] }.toSet()
     }
 
+    fun findExistingPluginAlias(content: String, pluginId: String): String? {
+        val pluginsContent = extractSection(content, PLUGINS_SECTION) ?: return null
+
+        return LIBRARY_ENTRY_REGEX.findAll(pluginsContent).firstOrNull { match ->
+            val fields = parseInlineTableFields(match.groupValues[2])
+            fields["id"] == pluginId
+        }?.groupValues?.get(1)
+    }
+
+    fun getAllPluginAliases(content: String): Set<String> {
+        val pluginsContent = extractSection(content, PLUGINS_SECTION) ?: return emptySet()
+        val regex = Regex("""^(\S+)\s*=""", RegexOption.MULTILINE)
+        return regex.findAll(pluginsContent).map { it.groupValues[1] }.toSet()
+    }
+
     /**
      * Adds a library entry for [info] and creates a matching version entry
      * only when the dependency declares an explicit version.
@@ -57,6 +74,14 @@ object VersionCatalogTomlEditor {
         } else {
             insertIntoSection(withLibrary, VERSIONS_SECTION, "$alias = \"$version\"")
         }
+    }
+
+    fun addPluginEntry(content: String, alias: String, info: PluginInfo): String {
+        val pluginLine = """$alias = { id = "${info.pluginId}", version.ref = "$alias" }"""
+
+        val withRequiredSections = ensureSections(content, listOf(PLUGINS_SECTION, VERSIONS_SECTION))
+        val withPlugin = insertIntoSection(withRequiredSections, PLUGINS_SECTION, pluginLine)
+        return insertIntoSection(withPlugin, VERSIONS_SECTION, "$alias = \"${info.version}\"")
     }
 
     fun createEmptyCatalogContent(): String = EMPTY_TOML
