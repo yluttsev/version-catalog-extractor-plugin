@@ -76,6 +76,9 @@ object VersionCatalogTomlEditor {
         }
     }
 
+    /**
+     * Adds a plugin entry for [info] and creates the matching version entry.
+     */
     fun addPluginEntry(content: String, alias: String, info: PluginInfo): String {
         val pluginLine = """$alias = { id = "${info.pluginId}", version.ref = "$alias" }"""
 

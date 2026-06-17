@@ -2,6 +2,10 @@ package io.github.yluttsev.catalogextractor.detection
 
 object GradleCorePluginIds {
 
+    /**
+     * Gradle core plugins are built in and should stay as plain plugin ids
+     * instead of being extracted to version catalog plugin aliases.
+     */
     private val CORE_PLUGIN_IDS = setOf(
         "antlr",
         "application",

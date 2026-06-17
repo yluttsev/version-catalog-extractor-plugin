@@ -9,6 +9,13 @@ import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 
 object PluginDetector {
 
+    /**
+     * Detects versioned `id("plugin.id") version "x.y.z"` declarations inside
+     * Gradle Kotlin DSL `plugins` blocks.
+     *
+     * Core Gradle plugins, catalog aliases, Kotlin plugin shorthand, versionless
+     * plugin declarations, and interpolated strings are intentionally ignored.
+     */
     fun detectInKotlinDsl(expression: KtBinaryExpression): PluginInfo? {
         if (!expression.isInsidePluginsBlock()) return null
         if (expression.operationReference.text != "version") return null

@@ -4,6 +4,12 @@ import io.github.yluttsev.catalogextractor.model.PluginInfo
 
 object PluginAliasGenerator {
 
+    /**
+     * Generates a version catalog plugin alias from a Gradle plugin id.
+     *
+     * Common reverse-DNS namespace prefixes are dropped so
+     * `org.springframework.boot` becomes `spring-boot`.
+     */
     fun generate(info: PluginInfo, existingAliases: Set<String>): String {
         val base = baseAlias(info.pluginId)
         if (base !in existingAliases) return base
