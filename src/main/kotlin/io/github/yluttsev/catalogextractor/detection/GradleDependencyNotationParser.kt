@@ -4,6 +4,12 @@ import io.github.yluttsev.catalogextractor.model.DependencyCoordinate
 
 object GradleDependencyNotationParser {
 
+    /**
+     * Parses literal Gradle dependency notation in supported forms:
+     * `group:name` and `group:name:version`.
+     *
+     * Returns `null` for interpolated, whitespace-containing, or extended notations.
+     */
     fun parseStringNotation(text: String): DependencyCoordinate? {
         if (text.isBlank() || text.any { it.isWhitespace() } || text.contains('$')) return null
 

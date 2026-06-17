@@ -24,13 +24,10 @@ object VersionCatalogTomlEditor {
         val (group, name) = module.split(':', limit = 2).takeIf { it.size == 2 } ?: return null
         val librariesContent = extractSection(content, LIBRARIES_SECTION) ?: return null
 
-        return LIBRARY_ENTRY_REGEX.findAll(librariesContent)
-            .firstOrNull { match ->
+        return LIBRARY_ENTRY_REGEX.findAll(librariesContent).firstOrNull { match ->
                 val fields = parseInlineTableFields(match.groupValues[2])
                 fields["module"] == module || (fields["group"] == group && fields["name"] == name)
-            }
-            ?.groupValues
-            ?.get(1)
+            }?.groupValues?.get(1)
     }
 
     fun getAllAliases(content: String): Set<String> {
@@ -39,6 +36,10 @@ object VersionCatalogTomlEditor {
         return regex.findAll(librariesContent).map { it.groupValues[1] }.toSet()
     }
 
+    /**
+     * Adds a library entry for [info] and creates a matching version entry
+     * only when the dependency declares an explicit version.
+     */
     fun addEntry(content: String, alias: String, info: DependencyInfo): String {
         val version = info.version
         val libraryLine = if (version == null) {
@@ -47,7 +48,8 @@ object VersionCatalogTomlEditor {
             """$alias = { module = "${info.module}", version.ref = "$alias" }"""
         }
 
-        val requiredSections = if (version == null) listOf(LIBRARIES_SECTION) else listOf(LIBRARIES_SECTION, VERSIONS_SECTION)
+        val requiredSections =
+            if (version == null) listOf(LIBRARIES_SECTION) else listOf(LIBRARIES_SECTION, VERSIONS_SECTION)
         val withRequiredSections = ensureSections(content, requiredSections)
         val withLibrary = insertIntoSection(withRequiredSections, LIBRARIES_SECTION, libraryLine)
         return if (version == null) {
@@ -112,7 +114,6 @@ object VersionCatalogTomlEditor {
         }
 
     private data class TomlSection(
-        val startLine: Int,
-        val endLineExclusive: Int
+        val startLine: Int, val endLineExclusive: Int
     )
 }
