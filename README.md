@@ -1,6 +1,6 @@
 # Version Catalog Extractor
 
-An IntelliJ IDEA plugin that detects literal dependency declarations in Gradle build files and extracts them into a Gradle Version Catalog (`libs.versions.toml`).
+An IntelliJ IDEA plugin that detects literal dependency and plugin declarations in Gradle build files and extracts them into a Gradle Version Catalog (`libs.versions.toml`).
 
 ## What it does
 
@@ -18,7 +18,15 @@ implementation 'org.example:lib:1.2.3'
 implementation 'org.springframework.boot:spring-boot-starter-web'
 ```
 
-When found, it highlights the dependency notation with a warning and offers a quick fix via **Alt+Enter**.
+It also supports versioned Gradle Kotlin DSL plugin declarations:
+
+```kotlin
+plugins {
+    id("org.springframework.boot") version "3.5.0"
+}
+```
+
+When found, it highlights the dependency or plugin declaration with a warning and offers a quick fix via **Alt+Enter**.
 
 ## Example
 
@@ -73,6 +81,30 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 ```
 
+Versioned Kotlin DSL plugin declarations are extracted to `[plugins]` and `[versions]`:
+
+```kotlin
+plugins {
+    id("org.springframework.boot") version "3.5.0"
+}
+```
+
+becomes:
+
+```kotlin
+plugins {
+    alias(libs.plugins.spring.boot)
+}
+```
+
+```toml
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+
+[versions]
+spring-boot = "3.5.0"
+```
+
 ## Supported configurations
 
 The inspection currently checks dependencies declared through these common Gradle configurations:
@@ -89,6 +121,10 @@ debugImplementation, releaseImplementation
 - Dependencies already using a catalog alias: `implementation(libs.retrofit)`
 - Dependencies with interpolated versions: `implementation("org.example:lib:$version")`
 - Dependencies without a literal `group:name` or `group:name:version` notation
+- Plugin aliases already using a catalog alias: `alias(libs.plugins.spring.boot)`
+- Core Gradle plugins: `id("java")`, `id("application")`, `id("java-library")`
+- Kotlin plugin shorthand: `kotlin("jvm") version "2.1.0"`
+- Plugin declarations without an explicit version
 
 ## Requirements
 

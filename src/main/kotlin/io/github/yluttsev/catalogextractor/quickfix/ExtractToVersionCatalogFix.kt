@@ -32,7 +32,7 @@ class ExtractToVersionCatalogFix(private val info: DependencyInfo) : LocalQuickF
         WriteCommandAction.runWriteCommandAction(project, "Extract to Version Catalog", null, {
             val existingCatalogFile = catalogFileService.find(project)
             val content = existingCatalogFile
-                ?.let { String(it.file.contentsToByteArray(), Charsets.UTF_8) }
+                ?.let { Files.readString(Path.of(it.file.path), Charsets.UTF_8) }
                 ?: VersionCatalogTomlEditor.createEmptyCatalogContent()
 
             val alias = VersionCatalogTomlEditor.findExistingAlias(content, info.module)
