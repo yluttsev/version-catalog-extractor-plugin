@@ -3,6 +3,8 @@ package io.github.yluttsev.catalogextractor.catalog
 import io.github.yluttsev.catalogextractor.model.DependencyInfo
 import io.github.yluttsev.catalogextractor.model.DependencyCoordinate
 import io.github.yluttsev.catalogextractor.model.GradleFormat
+import io.github.yluttsev.catalogextractor.model.PluginCoordinate
+import io.github.yluttsev.catalogextractor.model.PluginInfo
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -18,11 +20,19 @@ class VersionCatalogTomlEditorTest {
         junit = "4.13.2"
     """.trimIndent()
 
-    private fun buildDependencyInfo(groupId: String, artifactId: String, version: String = "2.9.0") = DependencyInfo(
+    private fun buildDependencyInfo(groupId: String, artifactId: String, version: String? = "2.9.0") = DependencyInfo(
         configuration = "implementation",
         coordinate = DependencyCoordinate(
             groupId = groupId,
             artifactId = artifactId,
+            version = version
+        ),
+        format = GradleFormat.KOTLIN_DSL
+    )
+
+    private fun buildPluginInfo(pluginId: String, version: String = "3.5.0") = PluginInfo(
+        coordinate = PluginCoordinate(
+            pluginId = pluginId,
             version = version
         ),
         format = GradleFormat.KOTLIN_DSL
@@ -70,10 +80,62 @@ class VersionCatalogTomlEditorTest {
     }
 
     @Test
+    fun `findExistingPluginAlias returns alias for known plugin id`() {
+        val toml = """
+            [plugins]
+            spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+
+            [versions]
+            spring-boot = "3.5.0"
+        """.trimIndent()
+
+        assertEquals("spring-boot", VersionCatalogTomlEditor.findExistingPluginAlias(toml, "org.springframework.boot"))
+    }
+
+    @Test
+    fun `getAllPluginAliases returns all plugin aliases`() {
+        val toml = """
+            [plugins]
+            spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+        """.trimIndent()
+
+        assertEquals(setOf("spring-boot"), VersionCatalogTomlEditor.getAllPluginAliases(toml))
+    }
+
+    @Test
     fun `addEntry inserts into libraries and versions`() {
         val result = VersionCatalogTomlEditor.addEntry(sampleToml, "retrofit", buildDependencyInfo("com.squareup.retrofit2", "retrofit"))
         assertTrue(result.contains("""retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }"""))
         assertTrue(result.contains("""retrofit = "2.9.0""""))
+    }
+
+    @Test
+    fun `addEntry inserts versionless dependency into libraries only`() {
+        val result = VersionCatalogTomlEditor.addEntry(
+            sampleToml,
+            "spring-boot-starter-web",
+            buildDependencyInfo("org.springframework.boot", "spring-boot-starter-web", version = null)
+        )
+
+        assertTrue(result.contains("""spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }"""))
+        assertFalse(result.contains("""spring-boot-starter-web = """"))
+        assertFalse(result.contains("""version.ref = "spring-boot-starter-web""""))
+    }
+
+    @Test
+    fun `addEntry does not create versions section for versionless dependency`() {
+        val toml = """
+            [libraries]
+            junit = { module = "junit:junit" }
+        """.trimIndent()
+
+        val result = VersionCatalogTomlEditor.addEntry(
+            toml,
+            "spring-boot-starter-web",
+            buildDependencyInfo("org.springframework.boot", "spring-boot-starter-web", version = null)
+        )
+
+        assertFalse(result.contains("[versions]"))
     }
 
     @Test
@@ -122,8 +184,16 @@ class VersionCatalogTomlEditorTest {
     }
 
     @Test
-    fun `emptyToml has correct section order`() {
-        val toml = VersionCatalogTomlEditor.emptyToml()
+    fun `addPluginEntry inserts into plugins and versions`() {
+        val result = VersionCatalogTomlEditor.addPluginEntry(sampleToml, "spring-boot", buildPluginInfo("org.springframework.boot"))
+
+        assertTrue(result.contains("""spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }"""))
+        assertTrue(result.contains("""spring-boot = "3.5.0""""))
+    }
+
+    @Test
+    fun `createEmptyCatalogContent has correct section order`() {
+        val toml = VersionCatalogTomlEditor.createEmptyCatalogContent()
         assertTrue(toml.indexOf("[libraries]") < toml.indexOf("[plugins]"))
         assertTrue(toml.indexOf("[plugins]") < toml.indexOf("[versions]"))
     }

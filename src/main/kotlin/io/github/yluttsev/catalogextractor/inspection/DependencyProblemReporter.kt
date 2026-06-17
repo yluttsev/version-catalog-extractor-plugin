@@ -4,27 +4,28 @@ import com.intellij.codeInspection.ProblemHighlightType
 import com.intellij.codeInspection.ProblemsHolder
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiElement
+import io.github.yluttsev.catalogextractor.CatalogExtractorBundle
 import io.github.yluttsev.catalogextractor.model.DependencyInfo
 import io.github.yluttsev.catalogextractor.quickfix.ExtractToVersionCatalogFix
 
 object DependencyProblemReporter {
 
     fun register(holder: ProblemsHolder, literal: PsiElement, info: DependencyInfo) {
-        val versionRange = findVersionRange(literal.text, info.version) ?: return
+        val notationRange = findNotationRange(literal.text, info.notation) ?: return
 
         holder.registerProblem(
             literal,
-            "Hardcoded dependency version '${info.version}'",
+            CatalogExtractorBundle.message("inspection.dependency.problem.description"),
             ProblemHighlightType.WARNING,
-            versionRange,
+            notationRange,
             ExtractToVersionCatalogFix(info)
         )
     }
 
-    internal fun findVersionRange(literalText: String, version: String): TextRange? {
-        val versionStart = literalText.lastIndexOf(version)
-        if (versionStart == -1) return null
+    internal fun findNotationRange(literalText: String, notation: String): TextRange? {
+        val notationStart = literalText.indexOf(notation)
+        if (notationStart == -1) return null
 
-        return TextRange(versionStart, versionStart + version.length)
+        return TextRange(notationStart, notationStart + notation.length)
     }
 }

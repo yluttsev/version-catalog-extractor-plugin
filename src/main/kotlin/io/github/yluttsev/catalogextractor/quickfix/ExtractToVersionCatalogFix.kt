@@ -9,6 +9,8 @@ import com.intellij.psi.PsiElement
 import io.github.yluttsev.catalogextractor.catalog.AliasGenerator
 import io.github.yluttsev.catalogextractor.catalog.VersionCatalogTomlEditor
 import io.github.yluttsev.catalogextractor.model.DependencyInfo
+import java.nio.file.Files
+import java.nio.file.Path
 
 class ExtractToVersionCatalogFix(private val info: DependencyInfo) : LocalQuickFix {
 
@@ -30,8 +32,8 @@ class ExtractToVersionCatalogFix(private val info: DependencyInfo) : LocalQuickF
         WriteCommandAction.runWriteCommandAction(project, "Extract to Version Catalog", null, {
             val existingCatalogFile = catalogFileService.find(project)
             val content = existingCatalogFile
-                ?.let { String(it.file.contentsToByteArray(), Charsets.UTF_8) }
-                ?: VersionCatalogTomlEditor.emptyToml()
+                ?.let { Files.readString(Path.of(it.file.path), Charsets.UTF_8) }
+                ?: VersionCatalogTomlEditor.createEmptyCatalogContent()
 
             val alias = VersionCatalogTomlEditor.findExistingAlias(content, info.module)
             if (alias != null) {
@@ -50,7 +52,10 @@ class ExtractToVersionCatalogFix(private val info: DependencyInfo) : LocalQuickF
             if (usageReplaced) {
                 updatedCatalogContent?.let {
                     val catalogFile = existingCatalogFile ?: catalogFileService.create(project) ?: return@runWriteCommandAction
-                    catalogFile.file.setBinaryContent(it.toByteArray(Charsets.UTF_8))
+                    val catalogPath = Path.of(catalogFile.file.path)
+                    Files.createDirectories(catalogPath.parent)
+                    Files.writeString(catalogPath, it, Charsets.UTF_8)
+                    catalogFile.file.refresh(false, false)
                 }
             }
             shouldRefreshGradle = usageReplaced
