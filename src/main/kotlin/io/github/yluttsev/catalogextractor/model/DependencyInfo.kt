@@ -7,6 +7,7 @@ data class DependencyInfo(
 ) {
     val groupId: String get() = coordinate.groupId
     val artifactId: String get() = coordinate.artifactId
-    val version: String get() = coordinate.version
+    val version: String? get() = coordinate.version
     val module: String get() = coordinate.module
+    val notation: String get() = coordinate.notation
 }

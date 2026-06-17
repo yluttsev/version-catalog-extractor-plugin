@@ -5,10 +5,10 @@
     <resource-bundle>messages.CatalogExtractorBundle</resource-bundle>
     <description>
         <![CDATA[
-    Detects hardcoded dependency versions in Gradle Kotlin and Groovy DSL files and offers
+    Detects literal dependency declarations in Gradle Kotlin and Groovy DSL files and offers
     a quick fix to move them to <code>gradle/libs.versions.toml</code>.<br>
     If the version catalog does not exist, the plugin creates it. If it already exists,
-    the plugin reuses matching aliases or adds new library and version entries.
+    the plugin reuses matching aliases or adds new library entries with version entries when needed.
         ]]>
     </description>
 

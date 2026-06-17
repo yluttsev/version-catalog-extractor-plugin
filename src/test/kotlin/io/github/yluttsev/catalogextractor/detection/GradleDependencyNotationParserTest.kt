@@ -17,8 +17,14 @@ class GradleDependencyNotationParserTest {
     }
 
     @Test
-    fun `parseStringNotation rejects missing version`() {
-        assertNull(GradleDependencyNotationParser.parseStringNotation("com.squareup.retrofit2:retrofit"))
+    fun `parseStringNotation returns dependency coordinates without version`() {
+        val coordinate = GradleDependencyNotationParser.parseStringNotation("org.springframework.boot:spring-boot-starter-web")
+
+        assertEquals("org.springframework.boot", coordinate?.groupId)
+        assertEquals("spring-boot-starter-web", coordinate?.artifactId)
+        assertNull(coordinate?.version)
+        assertEquals("org.springframework.boot:spring-boot-starter-web", coordinate?.module)
+        assertEquals("org.springframework.boot:spring-boot-starter-web", coordinate?.notation)
     }
 
     @Test
@@ -29,5 +35,10 @@ class GradleDependencyNotationParserTest {
     @Test
     fun `parseStringNotation rejects whitespace`() {
         assertNull(GradleDependencyNotationParser.parseStringNotation("com.squareup.retrofit2:retrofit:2.9.0 "))
+    }
+
+    @Test
+    fun `parseStringNotation rejects classifier notation`() {
+        assertNull(GradleDependencyNotationParser.parseStringNotation("com.squareup.retrofit2:retrofit:2.9.0:javadoc"))
     }
 }
