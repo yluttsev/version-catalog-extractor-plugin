@@ -1,22 +1,24 @@
 # Version Catalog Extractor
 
-An IntelliJ IDEA plugin that detects hardcoded dependency versions in Gradle build files and extracts them into a Gradle Version Catalog (`libs.versions.toml`).
+An IntelliJ IDEA plugin that detects literal dependency declarations in Gradle build files and extracts them into a Gradle Version Catalog (`libs.versions.toml`).
 
 ## What it does
 
-The plugin scans Gradle build files for dependencies with hardcoded versions and reports the version part as an inspection warning:
+The plugin scans Gradle build files for literal dependencies and reports the dependency notation as an inspection warning:
 
 ```kotlin
 // Kotlin DSL
 implementation("org.example:lib:1.2.3")
+implementation("org.springframework.boot:spring-boot-starter-web")
 ```
 
 ```groovy
 // Groovy DSL
 implementation 'org.example:lib:1.2.3'
+implementation 'org.springframework.boot:spring-boot-starter-web'
 ```
 
-When found, it highlights the version with a warning and offers a quick fix via **Alt+Enter**.
+When found, it highlights the dependency notation with a warning and offers a quick fix via **Alt+Enter**.
 
 ## Example
 
@@ -52,7 +54,7 @@ Applying the fix triggers the following steps:
 
 1. Locates `gradle/libs.versions.toml` in the project root. Creates the file if it does not exist.
 2. Checks whether a library entry for the same `group:name` already exists in the catalog. If it does, reuses the existing alias instead of creating a duplicate.
-3. If no entry exists, generates an alias from the dependency coordinates, adds a new entry to `[libraries]`, and creates a corresponding entry in `[versions]`.
+3. If no entry exists, generates an alias from the dependency coordinates, adds a new entry to `[libraries]`, and creates a corresponding entry in `[versions]` only when the dependency declares a version.
 4. Replaces the original dependency declaration with a catalog reference:
 
 ```kotlin
@@ -86,7 +88,7 @@ debugImplementation, releaseImplementation
 
 - Dependencies already using a catalog alias: `implementation(libs.retrofit)`
 - Dependencies with interpolated versions: `implementation("org.example:lib:$version")`
-- Dependencies without a literal `group:name:version` notation
+- Dependencies without a literal `group:name` or `group:name:version` notation
 
 ## Requirements
 

@@ -4,6 +4,8 @@ import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import java.nio.file.Files
+import java.nio.file.Path
 
 class VersionCatalogFileService {
 
@@ -16,33 +18,32 @@ class VersionCatalogFileService {
         val baseDir = findBaseDir(project) ?: return null
         val gradleDir = baseDir.findChild(GRADLE_DIR) ?: return null
         val catalog = gradleDir.findChild(CATALOG_FILE) ?: return null
+        if (!Files.exists(Path.of(catalog.path))) {
+            catalog.refresh(false, false)
+            return null
+        }
         return CatalogFile(catalog, created = false)
     }
 
     fun create(project: Project): CatalogFile? {
         val baseDir = findBaseDir(project) ?: return null
         return try {
-            val gradleDir = baseDir.findChild(GRADLE_DIR)
-                ?: baseDir.createChildDirectory(null, GRADLE_DIR).also {
-                    LOG.debug("Created '$GRADLE_DIR' directory for ${project.name}")
-                }
+            val catalogPath = Path.of(baseDir.path, GRADLE_DIR, CATALOG_FILE)
+            val catalogExists = Files.exists(catalogPath)
 
-            val existingCatalog = gradleDir.findChild(CATALOG_FILE)
-            if (existingCatalog != null) {
-                return CatalogFile(existingCatalog, created = false)
-            }
-
-            val newCatalog = gradleDir.createChildData(null, CATALOG_FILE).also {
+            Files.createDirectories(catalogPath.parent)
+            if (!catalogExists) {
+                Files.createFile(catalogPath)
                 LOG.debug("Created '$GRADLE_DIR/$CATALOG_FILE' for ${project.name}")
             }
-            CatalogFile(newCatalog, created = true)
+
+            val catalog = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(catalogPath) ?: return null
+            CatalogFile(catalog, created = !catalogExists)
         } catch (e: Exception) {
             LOG.error("Failed to create '$GRADLE_DIR/$CATALOG_FILE' for ${project.name}", e)
             null
         }
     }
-
-    fun findOrCreate(project: Project): CatalogFile? = find(project) ?: create(project)
 
     private fun findBaseDir(project: Project): VirtualFile? {
         val basePath = project.basePath

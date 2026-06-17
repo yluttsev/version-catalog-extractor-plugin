@@ -4,15 +4,16 @@ import io.github.yluttsev.catalogextractor.model.DependencyCoordinate
 
 object GradleDependencyNotationParser {
 
-    private val STRING_NOTATION_REGEX = Regex($$"""^([^:\s]+):([^:\s]+):([^:${}\s]+)$""")
-
     fun parseStringNotation(text: String): DependencyCoordinate? {
-        val match = STRING_NOTATION_REGEX.matchEntire(text) ?: return null
-        val (groupId, artifactId, version) = match.destructured
+        if (text.isBlank() || text.any { it.isWhitespace() } || text.contains('$')) return null
+
+        val parts = text.split(':')
+        if (parts.size !in 2..3 || parts.any { it.isBlank() }) return null
+
         return DependencyCoordinate(
-            groupId = groupId,
-            artifactId = artifactId,
-            version = version
+            groupId = parts[0],
+            artifactId = parts[1],
+            version = parts.getOrNull(2)
         )
     }
 }

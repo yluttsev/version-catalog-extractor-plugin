@@ -40,15 +40,24 @@ object VersionCatalogTomlEditor {
     }
 
     fun addEntry(content: String, alias: String, info: DependencyInfo): String {
-        val libraryLine = """$alias = { module = "${info.module}", version.ref = "$alias" }"""
-        val versionLine = """$alias = "${info.version}""""
+        val version = info.version
+        val libraryLine = if (version == null) {
+            """$alias = { module = "${info.module}" }"""
+        } else {
+            """$alias = { module = "${info.module}", version.ref = "$alias" }"""
+        }
 
-        val withRequiredSections = ensureSections(content, listOf(LIBRARIES_SECTION, VERSIONS_SECTION))
+        val requiredSections = if (version == null) listOf(LIBRARIES_SECTION) else listOf(LIBRARIES_SECTION, VERSIONS_SECTION)
+        val withRequiredSections = ensureSections(content, requiredSections)
         val withLibrary = insertIntoSection(withRequiredSections, LIBRARIES_SECTION, libraryLine)
-        return insertIntoSection(withLibrary, VERSIONS_SECTION, versionLine)
+        return if (version == null) {
+            withLibrary
+        } else {
+            insertIntoSection(withLibrary, VERSIONS_SECTION, "$alias = \"$version\"")
+        }
     }
 
-    fun emptyToml(): String = EMPTY_TOML
+    fun createEmptyCatalogContent(): String = EMPTY_TOML
 
     private fun extractSection(content: String, section: String): String? {
         val lines = content.lines()
